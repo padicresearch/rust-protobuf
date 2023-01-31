@@ -2,12 +2,16 @@
 //! [protobuf conventions](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 mod base64;
+mod cmd;
 mod float;
 mod parse;
 mod print;
 mod rfc_3339;
 mod well_known_wrapper;
 
+pub use self::cmd::Command;
+pub use self::cmd::CommandError;
+pub use self::cmd::CommandHandler;
 pub use self::parse::merge_from_str;
 pub use self::parse::merge_from_str_with_options;
 pub use self::parse::parse_dyn_from_str;

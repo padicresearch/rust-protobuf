@@ -17,9 +17,15 @@ bench = false
 
 [dependencies]
 thiserror = "1.0.30"
+nom = "7.1.3"
 
 protobuf = { path = "../protobuf", version = "=4.0.0-alpha.0" }
 protobuf-support = { path = "../protobuf-support", version = "=4.0.0-alpha.0" }
 
 [package.metadata.docs.rs]
 all-features = true
+
+[dev-dependencies]
+hex = "0.4.3"
+protobuf-parse = { path = "../protobuf-parse"}
+prost = "0.11.6"
