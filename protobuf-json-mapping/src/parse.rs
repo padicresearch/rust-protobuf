@@ -42,7 +42,10 @@ use super::base64;
 use super::float;
 use super::rfc_3339;
 use crate::base64::FromBase64Error;
-use crate::cmd::{Command, CommandError, CommandHandler, parse_cmd_str};
+use crate::cmd::parse_cmd_str;
+use crate::cmd::Command;
+use crate::cmd::CommandError;
+use crate::cmd::CommandHandler;
 use crate::well_known_wrapper::WellKnownWrapper;
 
 #[derive(Debug, thiserror::Error)]
@@ -368,11 +371,8 @@ impl<'a> Parser<'a> {
             Ok(cmd) => {
                 (self.parse_options.handler)(&cmd).map_err(|e| ParseErrorWithoutLoc::from(e))
             }
-            Err(_) => {
-                Ok(base64::decode(s)?)
-            }
+            Err(_) => Ok(base64::decode(s)?),
         }
-
     }
 
     fn read_enum(&mut self, descriptor: &EnumDescriptor) -> ParseResultWithoutLoc<i32> {
@@ -855,8 +855,8 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn handle_command(_ : &Command) -> Result<Vec<u8>, CommandError> {
-    return Err(CommandError::FailedToParse)
+pub fn handle_command(_: &Command) -> Result<Vec<u8>, CommandError> {
+    return Err(CommandError::FailedToParse);
 }
 
 /// JSON parse options.
@@ -876,10 +876,9 @@ pub struct ParseOptions<'a> {
     /// When `true` fields with unknown names are ignored.
     /// When `false` parser returns an error on unknown field.
     pub ignore_unknown_fields: bool,
-    pub handler : &'a CommandHandler,
+    pub handler: &'a CommandHandler,
     /// Prevent initializing `ParseOptions` enumerating all field.
     pub _future_options: (),
-
 }
 
 impl<'a> Default for ParseOptions<'a> {
