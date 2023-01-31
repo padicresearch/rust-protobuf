@@ -42,6 +42,7 @@ use super::base64;
 use super::float;
 use super::rfc_3339;
 use crate::base64::FromBase64Error;
+use crate::cmd::{Command, CommandError, CommandHandler, parse_cmd_str};
 use crate::well_known_wrapper::WellKnownWrapper;
 
 #[derive(Debug, thiserror::Error)]
@@ -54,6 +55,8 @@ enum ParseErrorWithoutLocInner {
     UnknownEnumVariantName(String),
     #[error(transparent)]
     FromBase64Error(#[from] FromBase64Error),
+    #[error(transparent)]
+    FromCommandError(#[from] CommandError),
     #[error(transparent)]
     IncorrectStrLit(#[from] LexerError),
     #[error("Incorrect duration")]
@@ -86,6 +89,12 @@ struct ParseErrorWithoutLoc(ParseErrorWithoutLocInner);
 impl From<TokenizerError> for ParseErrorWithoutLoc {
     fn from(e: TokenizerError) -> Self {
         ParseErrorWithoutLoc(ParseErrorWithoutLocInner::TokenizerError(e))
+    }
+}
+
+impl From<CommandError> for ParseErrorWithoutLoc {
+    fn from(e: CommandError) -> Self {
+        ParseErrorWithoutLoc(ParseErrorWithoutLocInner::FromCommandError(e))
     }
 }
 
@@ -127,7 +136,7 @@ type ParseResult<A> = Result<A, ParseError>;
 #[derive(Clone)]
 struct Parser<'a> {
     tokenizer: Tokenizer<'a>,
-    parse_options: ParseOptions,
+    parse_options: ParseOptions<'a>,
 }
 
 trait FromJsonNumber: PartialEq + Sized {
@@ -355,7 +364,15 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_bytes(&self, s: &str) -> ParseResultWithoutLoc<Vec<u8>> {
-        Ok(base64::decode(s)?)
+        match parse_cmd_str(s) {
+            Ok(cmd) => {
+                (self.parse_options.handler)(&cmd).map_err(|e| ParseErrorWithoutLoc::from(e))
+            }
+            Err(_) => {
+                Ok(base64::decode(s)?)
+            }
+        }
+
     }
 
     fn read_enum(&mut self, descriptor: &EnumDescriptor) -> ParseResultWithoutLoc<i32> {
@@ -838,6 +855,10 @@ impl<'a> Parser<'a> {
     }
 }
 
+pub fn handle_command(_ : &Command) -> Result<Vec<u8>, CommandError> {
+    return Err(CommandError::FailedToParse)
+}
+
 /// JSON parse options.
 ///
 /// # Examples
@@ -848,15 +869,27 @@ impl<'a> Parser<'a> {
 ///     ..Default::default()
 /// };
 /// ```
-#[derive(Default, Debug, Clone)]
-pub struct ParseOptions {
+#[derive(Clone)]
+pub struct ParseOptions<'a> {
     /// Ignore unknown fields when parsing.
     ///
     /// When `true` fields with unknown names are ignored.
     /// When `false` parser returns an error on unknown field.
     pub ignore_unknown_fields: bool,
+    pub handler : &'a CommandHandler,
     /// Prevent initializing `ParseOptions` enumerating all field.
     pub _future_options: (),
+
+}
+
+impl<'a> Default for ParseOptions<'a> {
+    fn default() -> Self {
+        Self {
+            ignore_unknown_fields: false,
+            handler: &handle_command,
+            _future_options: (),
+        }
+    }
 }
 
 /// Merge JSON into provided message
