@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Message {
+  bytes payload = 1;
+  string sender = 2;
+}

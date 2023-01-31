@@ -22,7 +22,10 @@ pub struct Command<'a> {
     pub op: &'a str,
     pub data: &'a str,
 }
-
+/// Example
+/// pub fn handle_command(_: &Command) -> Result<Vec<u8>, CommandError> {
+///     ...
+/// }
 pub type CommandHandler = dyn 'static + Send + Sync + Fn(&Command) -> Result<Vec<u8>, CommandError>;
 
 pub(crate) fn parse_cmd_str(input: &str) -> Result<Command, CommandError> {
